@@ -1,7 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
+import { LoginAuthDto } from './dto/login-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 
 @Injectable()
@@ -17,14 +18,18 @@ export class AuthService {
     if (user) {
       throw new ForbiddenException('User Already Exists!')
     }
-    const createdUser = await this.userService.create(createAuthDto);
-    const payload = {
-      name: createdUser.name,
-      username: createdUser.username,
-      email: createdUser.email,
-      id: createdUser.id
+    const { hash, ...userData } = await this.userService.create(createAuthDto);
+    const access_token = this.jwtService.sign(userData, { secret: process.env.JWT_SECRET, });
+    return { access_token, user: userData };
+  }
+
+  async login(loginData: LoginAuthDto) {
+    const { hash, ...user } = await this.userService.findByEmail(loginData.email);
+    if (!user) {
+      throw new NotFoundException('User Not Found!')
     }
-    const access_token = this.jwtService.sign(payload, { secret: process.env.JWT_SECRET, });
-    return { access_token, user: createdUser };
+
+    const access_token = this.jwtService.sign(user, { secret: process.env.JWT_SECRET, });
+    return { access_token, user };
   }
 }
