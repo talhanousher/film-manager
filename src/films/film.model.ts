@@ -45,7 +45,7 @@ export const FilmSchema = new Schema({
       text: { type: String },
       user: {
         type: mongoose.Types.ObjectId,
-        ref: "User"
+        ref: "user"
       },
 
     })

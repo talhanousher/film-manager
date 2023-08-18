@@ -4,6 +4,7 @@ import { CreateFilmDto } from './dto/create-film.dto';
 import { UpdateFilmDto } from './dto/update-film.dto';
 import { RatingFilmDto } from './dto/rating-film.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { CommentFilmDto } from './dto/comment-film.dto';
 
 @Controller('films')
 export class FilmsController {
@@ -38,5 +39,11 @@ export class FilmsController {
   @Post(':id/rating')
   addRating(@Req() req, @Param('id') id: string, @Body() ratingFilmDto: RatingFilmDto) {
     return this.filmsService.addRating(id, { user: req.user._id, ...ratingFilmDto });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/comment')
+  addComment(@Req() req, @Param('id') id: string, @Body() commentFilmDto: CommentFilmDto) {
+    return this.filmsService.addComment(id, { user: req.user._id, ...commentFilmDto });
   }
 }
