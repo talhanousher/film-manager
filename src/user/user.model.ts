@@ -18,6 +18,7 @@ export const UserSchema = new Schema({
   }
 }, { timestamps: true });
 
+
 export interface User extends mongoose.Document {
   _id: string,
   name: string,

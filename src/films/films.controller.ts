@@ -1,12 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { FilmsService } from './films.service';
 import { CreateFilmDto } from './dto/create-film.dto';
 import { UpdateFilmDto } from './dto/update-film.dto';
+import { RatingFilmDto } from './dto/rating-film.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('films')
 export class FilmsController {
-  constructor(private readonly filmsService: FilmsService) {}
+  constructor(private readonly filmsService: FilmsService) { }
 
   @Post()
   create(@Body() createFilmDto: CreateFilmDto) {
@@ -31,5 +32,11 @@ export class FilmsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.filmsService.remove(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/rating')
+  addRating(@Req() req, @Param('id') id: string, @Body() ratingFilmDto: RatingFilmDto) {
+    return this.filmsService.addRating(id, { user: req.user._id, ...ratingFilmDto });
   }
 }
