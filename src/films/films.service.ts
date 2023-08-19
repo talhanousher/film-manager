@@ -7,13 +7,31 @@ import { RatingFilmDto } from './dto/rating-film.dto';
 import { UpdateFilmDto } from './dto/update-film.dto';
 import { Film } from './film.model';
 
+import { Client } from '@elastic/elasticsearch';
+const client = new Client({
+  node: process.env.ELASTIC_ENDPOINT, // Elasticsearch endpoint
+  auth: {
+    apiKey: { // API key ID and secret
+      id: process.env.ELASTIC_ID,
+      api_key: process.env.ELATSIC_API_KEY,
+    }
+  }
+})
 @Injectable()
 export class FilmsService {
 
   constructor(@InjectModel('film') private readonly filmModel: Model<Film>) { }
 
-  create(createFilmDto: CreateFilmDto) {
-    return this.filmModel.create(createFilmDto);
+  async create(createFilmDto: CreateFilmDto) {
+    const film = await this.filmModel.create(createFilmDto);
+    // await client.indices.create({ index: 'my_index' })
+    const { _id, ...dataForElasticSearch } = film.toJSON()
+    await client.index({
+      index: 'search-films',
+      id: film._id,
+      document: dataForElasticSearch,
+    })
+    return film;
   }
 
   findAll() {
@@ -24,11 +42,22 @@ export class FilmsService {
     return this.filmModel.findById(id).populate([{ path: "ratings.user comments.user", select: 'name email' }]);
   }
 
-  update(id: string, updateFilmDto: UpdateFilmDto) {
-    return this.filmModel.findByIdAndUpdate({ _id: id }, { ...updateFilmDto }, { new: true });
+  async update(id: string, updateFilmDto: UpdateFilmDto) {
+    const film = await this.filmModel.findByIdAndUpdate({ _id: id }, { ...updateFilmDto }, { new: true });
+    const { _id, ...dataForElasticSearch } = film.toJSON()
+    await client.update({
+      index: 'search-films',
+      id: film._id,
+      doc: dataForElasticSearch,
+    })
+    return film
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    await client.delete({
+      index: 'search-films',
+      id: id
+    })
     return this.filmModel.findByIdAndRemove(id);
   }
 
@@ -41,7 +70,14 @@ export class FilmsService {
     if (isAlreadyGivesRating) {
       throw new ForbiddenException('Already here!!')
     }
-    return this.filmModel.findOneAndUpdate({ _id: id }, { $push: { ratings: ratingFilmDto } }, { new: true }).populate([{ path: "ratings.user comments.user", select: 'name email' }]);
+    const updatedFilm = await this.filmModel.findOneAndUpdate({ _id: id }, { $push: { ratings: ratingFilmDto } }, { new: true }).populate([{ path: "ratings.user comments.user", select: 'name email' }])
+    const { _id, ...dataForElasticSearch } = updatedFilm.toJSON()
+    await client.update({
+      index: 'search-films',
+      id: updatedFilm._id,
+      doc: dataForElasticSearch,
+    })
+    return updatedFilm;
   }
 
   async addComment(id: string, commentFilmDto: CommentFilmDto) {
@@ -49,6 +85,13 @@ export class FilmsService {
     if (!film) {
       throw new NotFoundException('Film Not Found!')
     }
-    return this.filmModel.findOneAndUpdate({ _id: id }, { $push: { comments: commentFilmDto } }, { new: true }).populate([{ path: "ratings.user comments.user", select: 'name email' }]);
+    const updatedFilm = await this.filmModel.findOneAndUpdate({ _id: id }, { $push: { comments: commentFilmDto } }, { new: true }).populate([{ path: "ratings.user comments.user", select: 'name email' }]);
+    const { _id, ...dataForElasticSearch } = updatedFilm.toJSON()
+    await client.update({
+      index: 'search-films',
+      id: updatedFilm._id,
+      doc: dataForElasticSearch,
+    })
+    return updatedFilm;
   }
 }
