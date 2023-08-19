@@ -101,7 +101,6 @@ export class FilmsService {
   }
 
   async search(searchDataDto: SearchDataDto) {
-
     const query: any = {
       bool: {
         must: {
@@ -119,6 +118,9 @@ export class FilmsService {
     }
     if (searchDataDto.country) {
       query.bool.filter.push({ term: { genre: searchDataDto.country } })
+    }
+    if (searchDataDto.ticketPrice) {
+      query.bool.filter.push({ term: { ticketPrice: searchDataDto.ticketPrice } })
     }
 
     const results = await client.search({
