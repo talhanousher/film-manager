@@ -98,24 +98,32 @@ export class FilmsService {
 
   async search(searchDataDto: SearchDataDto) {
 
-    const results = await client.search({
-      index: 'search-films',
-      query: {
-        multi_match: {
-          query: searchDataDto.text,
-          fields: ['name', 'description', 'genre', 'country', 'ratings.user', 'comments.user'],
-          fuzziness: 'AUTO',
+    const query: any = {
+      bool: {
+        must: {
+          multi_match: {
+            query: searchDataDto.text,
+            fields: ['name', 'description'],
+            fuzziness: 'AUTO' // Optional: Include fuzzy matching for misspelled words
+          }
         },
-      },
-    });
-    let response = results.hits.hits.map(hit => hit._source);
+        filter: []
+      }
+    };
     if (searchDataDto.genre) {
-      response = response.filter((o: any) => o.genre === searchDataDto.genre);
+      query.bool.filter.push({ term: { genre: searchDataDto.genre } })
     }
     if (searchDataDto.country) {
-      response = response.filter((o: any) => o.country === searchDataDto.country);
+      query.bool.filter.push({ term: { genre: searchDataDto.country } })
     }
-    return response;
+
+    const results = await client.search({
+      index: 'search-films',
+      body: {
+        query
+      }
+    });
+    return results.hits.hits.map(hit => hit._source);
   }
 
 }
