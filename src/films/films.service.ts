@@ -8,6 +8,7 @@ import { UpdateFilmDto } from './dto/update-film.dto';
 import { Film } from './film.model';
 
 import { Client } from '@elastic/elasticsearch';
+import { SearchDataDto } from './dto/search-data.dto';
 const client = new Client({
   node: process.env.ELASTIC_ENDPOINT, // Elasticsearch endpoint
   auth: {
@@ -28,8 +29,8 @@ export class FilmsService {
     const { _id, ...dataForElasticSearch } = film.toJSON()
     await client.index({
       index: 'search-films',
-      id: film._id,
-      document: dataForElasticSearch,
+      id: _id,
+      document: { document_id: _id, ...dataForElasticSearch },
     })
     return film;
   }
@@ -48,7 +49,7 @@ export class FilmsService {
     await client.update({
       index: 'search-films',
       id: film._id,
-      doc: dataForElasticSearch,
+      doc: { document_id: _id, ...dataForElasticSearch },
     })
     return film
   }
@@ -75,7 +76,7 @@ export class FilmsService {
     await client.update({
       index: 'search-films',
       id: updatedFilm._id,
-      doc: dataForElasticSearch,
+      doc: { document_id: _id, ...dataForElasticSearch },
     })
     return updatedFilm;
   }
@@ -90,23 +91,31 @@ export class FilmsService {
     await client.update({
       index: 'search-films',
       id: updatedFilm._id,
-      doc: dataForElasticSearch,
+      doc: { document_id: _id, ...dataForElasticSearch },
     })
     return updatedFilm;
   }
 
-  async search(search: any) {
+  async search(searchDataDto: SearchDataDto) {
+
     const results = await client.search({
       index: 'search-films',
       query: {
         multi_match: {
-          query: search.text,
-          fields: ['name', 'description', 'genre', 'country', 'ratings.rating'],
-          fuzziness: 'AUTO'
-        }
+          query: searchDataDto.text,
+          fields: ['name', 'description', 'genre', 'country', 'ratings.user', 'comments.user'],
+          fuzziness: 'AUTO',
+        },
       },
-
     });
-    return results.hits.hits;
+    let response = results.hits.hits.map(hit => hit._source);
+    if (searchDataDto.genre) {
+      response = response.filter((o: any) => o.genre === searchDataDto.genre);
+    }
+    if (searchDataDto.country) {
+      response = response.filter((o: any) => o.country === searchDataDto.country);
+    }
+    return response;
   }
+
 }

@@ -5,6 +5,7 @@ import { UpdateFilmDto } from './dto/update-film.dto';
 import { RatingFilmDto } from './dto/rating-film.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CommentFilmDto } from './dto/comment-film.dto';
+import { SearchDataDto } from './dto/search-data.dto';
 
 @Controller('films')
 export class FilmsController {
@@ -48,8 +49,8 @@ export class FilmsController {
   }
 
   @Post('search')
-  search(@Body() searchDto) {
-    return this.filmsService.search(searchDto);
+  search(@Body() searchDataDto: SearchDataDto) {
+    return this.filmsService.search(searchDataDto);
   }
 
 }
