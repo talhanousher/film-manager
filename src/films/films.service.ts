@@ -94,4 +94,19 @@ export class FilmsService {
     })
     return updatedFilm;
   }
+
+  async search(search: any) {
+    const results = await client.search({
+      index: 'search-films',
+      query: {
+        multi_match: {
+          query: search.text,
+          fields: ['name', 'description', 'genre', 'country', 'ratings.rating'],
+          fuzziness: 'AUTO'
+        }
+      },
+
+    });
+    return results.hits.hits;
+  }
 }

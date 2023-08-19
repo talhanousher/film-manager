@@ -46,4 +46,10 @@ export class FilmsController {
   addComment(@Req() req, @Param('id') id: string, @Body() commentFilmDto: CommentFilmDto) {
     return this.filmsService.addComment(id, { user: req.user._id, ...commentFilmDto });
   }
+
+  @Post('search')
+  search(@Body() searchDto) {
+    return this.filmsService.search(searchDto);
+  }
+
 }
