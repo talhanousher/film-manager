@@ -32,7 +32,7 @@ export const FilmSchema = new Schema({
   ratings: [
     new Schema({
       rating: {
-        type: String
+        type: Number
       },
       user: {
         type: mongoose.Types.ObjectId,

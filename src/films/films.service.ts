@@ -59,7 +59,8 @@ export class FilmsService {
       index: 'search-films',
       id: id
     })
-    return this.filmModel.findByIdAndRemove(id);
+    await this.filmModel.findByIdAndRemove(id);
+    return;
   }
 
   async addRating(id: string, ratingFilmDto: RatingFilmDto) {
@@ -70,6 +71,9 @@ export class FilmsService {
     const isAlreadyGivesRating = film.ratings.find(o => o.user.toString() === ratingFilmDto.user.toString());
     if (isAlreadyGivesRating) {
       throw new ForbiddenException('Already here!!')
+    }
+    if (ratingFilmDto.rating < 0 || ratingFilmDto.rating > 5) {
+      throw new ForbiddenException('Invalid Rating')
     }
     const updatedFilm = await this.filmModel.findOneAndUpdate({ _id: id }, { $push: { ratings: ratingFilmDto } }, { new: true }).populate([{ path: "ratings.user comments.user", select: 'name email' }])
     const { _id, ...dataForElasticSearch } = updatedFilm.toJSON()
