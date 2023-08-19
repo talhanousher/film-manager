@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CommentFilmDto } from './dto/comment-film.dto';
@@ -25,7 +25,6 @@ export class FilmsService {
 
   async create(createFilmDto: CreateFilmDto) {
     const film = await this.filmModel.create(createFilmDto);
-    // await client.indices.create({ index: 'my_index' })
     const { _id, ...dataForElasticSearch } = film.toJSON()
     await client.index({
       index: 'search-films',
@@ -39,12 +38,19 @@ export class FilmsService {
     return this.filmModel.find().populate([{ path: "ratings.user comments.user", select: 'name email' }]);
   }
 
-  findOne(id: string) {
-    return this.filmModel.findById(id).populate([{ path: "ratings.user comments.user", select: 'name email' }]);
+  async findOne(id: string) {
+    const film = await this.filmModel.findById(id).populate([{ path: "ratings.user comments.user", select: 'name email' }]);
+    if (!film) {
+      throw new NotFoundException('Invalid Id');
+    }
+    return film
   }
 
   async update(id: string, updateFilmDto: UpdateFilmDto) {
     const film = await this.filmModel.findByIdAndUpdate({ _id: id }, { ...updateFilmDto }, { new: true });
+    if(!film){
+      throw new NotFoundException('Invalid Id');
+    }
     const { _id, ...dataForElasticSearch } = film.toJSON()
     await client.update({
       index: 'search-films',
@@ -55,22 +61,25 @@ export class FilmsService {
   }
 
   async remove(id: string) {
+    const film = await this.filmModel.findByIdAndRemove(id);
+    if(!film){
+      throw new NotFoundException('Invalid Id');
+    }
     await client.delete({
       index: 'search-films',
       id: id
-    })
-    await this.filmModel.findByIdAndRemove(id);
+    });
     return;
   }
 
   async addRating(id: string, ratingFilmDto: RatingFilmDto) {
     const film: any = await this.filmModel.findById(id);
     if (!film) {
-      throw new NotFoundException('Film Not Found!')
+      throw new NotFoundException('Invalid Id')
     }
     const isAlreadyGivesRating = film.ratings.find(o => o.user.toString() === ratingFilmDto.user.toString());
     if (isAlreadyGivesRating) {
-      throw new ForbiddenException('Already here!!')
+      throw new ForbiddenException('You have already gives a rating')
     }
     if (ratingFilmDto.rating < 0 || ratingFilmDto.rating > 5) {
       throw new ForbiddenException('Invalid Rating')
@@ -88,7 +97,7 @@ export class FilmsService {
   async addComment(id: string, commentFilmDto: CommentFilmDto) {
     const film: any = await this.filmModel.findById(id);
     if (!film) {
-      throw new NotFoundException('Film Not Found!')
+      throw new NotFoundException('Invalid Id')
     }
     const updatedFilm = await this.filmModel.findOneAndUpdate({ _id: id }, { $push: { comments: commentFilmDto } }, { new: true }).populate([{ path: "ratings.user comments.user", select: 'name email' }]);
     const { _id, ...dataForElasticSearch } = updatedFilm.toJSON()
