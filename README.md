@@ -24,7 +24,7 @@
 
 ## Description
 
-A film manager backend project [Nest](https://github.com/nestjs/nest) for crating, update , deleted films integrated with elastic search to perform search operations.
+A film manager backend project [Nest](https://github.com/nestjs/nest) for creating, update , delete films, integrated with elastic search to perform search operations.
 
 ## Installation
 
