@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -14,13 +14,17 @@ export class AuthService {
   ) { }
 
   async register(createAuthDto: CreateAuthDto) {
-    const user = await this.userService.findByEmail(createAuthDto.email);
-    if (user) {
-      throw new ForbiddenException('User Already Exists!')
+    try {
+      const user = await this.userService.findByEmail(createAuthDto.email);
+      if (user) {
+        throw new ForbiddenException('User Already Exists!')
+      }
+      const { hash, ...userData } = await this.userService.create(createAuthDto);
+      const access_token = this.jwtService.sign(userData, { secret: process.env.JWT_SECRET, });
+      return { access_token, user: userData };
+    } catch (error) {
+      throw new BadRequestException(error.message)
     }
-    const { hash, ...userData } = await this.userService.create(createAuthDto);
-    const access_token = this.jwtService.sign(userData, { secret: process.env.JWT_SECRET, });
-    return { access_token, user: userData };
   }
 
   async login(loginData: LoginAuthDto) {
