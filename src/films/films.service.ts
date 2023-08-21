@@ -47,7 +47,7 @@ export class FilmsService {
   }
 
   async update(id: string, updateFilmDto: UpdateFilmDto) {
-    const film = await this.filmModel.findByIdAndUpdate({ _id: id }, { ...updateFilmDto }, { new: true });
+    const film = await this.filmModel.findByIdAndUpdate({ _id: id }, { ...updateFilmDto }, { new: true }).populate([{ path: "ratings.user comments.user", select: 'name email' }]);
     if(!film){
       throw new NotFoundException('Invalid Id');
     }
