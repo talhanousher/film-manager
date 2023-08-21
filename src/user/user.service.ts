@@ -18,7 +18,9 @@ export class UserService {
 
   async findByEmail(email: string) {
     const user = await this.userModel.findOne({ email });
-    return user.toJSON();
+    if (user) {
+      return user.toJSON();
+    }
   }
 
   async validateUser(email: string, password: string): Promise<any> {
